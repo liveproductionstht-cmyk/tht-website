@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>THT Production Engine</title>
+    <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: #0b0f19; color: #f3f4f6; margin: 0; padding: 20px;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
+        }
+        .window-box {
+            background: #111827; padding: 40px; border-radius: 16px; border: 1px solid #1f2937;
+            width: 100%; max-width: 500px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .hidden { display: none !important; }
+        button {
+            width: 100%; padding: 14px; background: #3b82f6; color: white;
+            border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; font-weight: 600; margin-top: 12px;
+            transition: all 0.2s;
+        }
+        button:hover { background: #2563eb; transform: translateY(-1px); }
+        .option-btn { background: #1f2937; color: #e5e7eb; border: 1px solid #374151; margin-bottom: 10px;}
+        .option-btn:hover { background: #374151; border-color: #4b5563; }
+        input[type="text"], textarea, input[type="file"] {
+            width: 100%; padding: 12px; margin: 12px 0; border: 1px solid #374151; 
+            background: #1f2937; color: white; border-radius: 8px; box-sizing: border-box; font-family: inherit;
+        }
+        textarea { height: 100px; resize: none; }
+        
+        .pfp { width: 90px; height: 90px; border-radius: 50%; border: 3px solid #f59e0b; margin-bottom: 15px; }
+        
+        /* Loading Circle Spinner */
+        .spinner-container { position: relative; width: 130px; height: 130px; margin: 25px auto; }
+        .loading-icon { width: 100%; height: 100%; animation: spin 2s linear infinite; }
+        .percentage-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5rem; font-weight: bold; color: #f59e0b; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .video-preview { width: 100%; height: 220px; background: #030712; margin: 15px 0; display: flex; justify-content: center; align-items: center; border-radius: 8px; border: 1px dashed #374151; }
+        label { display: block; text-align: left; font-size: 0.85rem; color: #9ca3af; margin-bottom: -4px; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <div class="window-box">
+        <div id="scr-signin">
+            <h2 style="color: #3b82f6; margin-top:0;">THT Login Portal</h2>
+            <p style="color: #9ca3af;">Enter your client tag string identifier:</p>
+            <input type="text" id="username" placeholder="Your Name (e.g. sky)">
+            <button onclick="signIn()">Establish Secure Link</button>
+        </div>
+
+        <div id="scr-create" class="hidden">
+            <h2>Select Project Engine</h2>
+            <p style="color: #9ca3af; font-size: 0.9rem; margin-bottom: 20px;">What asset pipeline are we manufacturing today?</p>
+            <button class="option-btn" onclick="openPipeline('Movie')">🎬 Produce a Movie Asset</button>
+            <button class="option-btn" onclick="openPipeline('LiveMovement')">🏃 Run Live Movement Engine</button>
+        </div>
+
+        <div id="scr-movie-panel" class="hidden">
+            <h2>Movie Details</h2>
+            <label>Movie Project Name</label>
+            <input type="text" id="mv-title" placeholder="Enter movie title...">
+            <label>Scene Description Layout</label>
+            <textarea id="mv-desc" placeholder="Describe the environment, lighting, visual elements..."></textarea>
+            <label>Master Production Script</label>
+            <textarea id="mv-script" placeholder="Character lines, actions, timestamps..."></textarea>
+            <button onclick="submitMovie()">Dispatch Movie Pitch to THT</button>
+            <button class="option-btn" style="margin-top:8px;" onclick="show('scr-create')">Go Back</button>
+        </div>
+
+        <div id="scr-movement-panel" class="hidden">
+            <h2>Live Movement Engine</h2>
+            <p style="color:#9ca3af; font-size:0.85rem;">Upload a flat canvas texture graphic asset and specify your rendering animation parameters.</p>
+            <label>Upload Target Sprite Image</label>
+            <input type="file" id="mvmt-file" accept="image/*">
+            <label>Animation Behavior Instructions</label>
+            <textarea id="mvmt-directions" placeholder="Tell THT how you want it to move (e.g. 'Make the character jump over a box and wave at the screen')"></textarea>
+            <button onclick="submitMovement()">Send Sprite Sheet & Instructions</button>
+            <button class="option-btn" style="margin-top:8px;" onclick="show('scr-create')">Go Back</button>
+        </div>
+
+        <div id="scr-waiting" class="hidden">
+            <h2 style="color: #f59e0b;">Awaiting THT Review...</h2>
+            <p>Your production packets have been sent out. Keep this window open while the workspace reviews the assets.</p>
+        </div>
+
+        <div id="scr-denied" class="hidden">
+            <h2 style="color: #ef4444;">Project Rejected</h2>
+            <p style="color:#9ca3af;">THT Core Command has declined or terminated this session loop.</p>
+            <button onclick="window.location.reload()">Return to Gate</button>
+        </div>
+
+        <div id="scr-progress" class="hidden">
+            <h2 id="progress-heading">THT is manufacturing your file...</h2>
+            <div class="spinner-container">
+                <img src="https://cdn-icons-png.flaticon.com/512/126/126265.png" class="loading-icon" alt="Loading Core">
+                <div class="percentage-text" id="live-pct">1%</div>
+            </div>
+            <p style="font-size:0.85rem; color:#9ca3af;">Processing rendering nodes in real time...</p>
+        </div>
+
+        <div id="scr-verify" class="hidden">
+            <h2 style="color: #f59e0b;">Subscription Barrier Active</h2>
+            <p style="color: #9ca3af; font-size: 0.9rem;">To render the output video, make sure you are subscribed to both channels:</p>
+            <a href="https://www.youtube.com/channel/UCzzp_Tjq7SZ5vM5KluBp0dw" target="_blank" style="color: #3b82f6; display:block; margin: 15px 0; font-weight:600; text-decoration:none;">🔴 Subscribe to SkyChannelPower 🔗</a>
+            <a href="https://www.youtube.com/channel/UCsSm9WofK_gsCt9qDUeZUjg" target="_blank" style="color: #3b82f6; display:block; margin-bottom: 25px; font-weight:600; text-decoration:none;">🔴 Subscribe to THT Productions & LAD 🔗</a>
+            <button style="background: #10b981;" onclick="verifyGate()">Unlock Transcoded Outputs</button>
+        </div>
+
+        <div id="scr-delivery" class="hidden">
+            <h2 style="color: #10b981;">Rendering Sequence Complete!</h2>
+            <div class="video-preview">
+                <video id="output-video" width="100%" controls style="border-radius:8px; display:none;"></video>
+                <span id="preview-placeholder" style="color: #6b7280;">🎬 Awaiting Stream Array Authorization...</span>
+            </div>
+            <a id="download-lnk" href="#" download style="display:none;"><button style="background: #10b981;">Download Complete Video Pack</button></a>
+        </div>
+    </div>
+
+    <script>
+        let peer, conn, myName = "";
+
+        function show(id) {
+            ['scr-signin', 'scr-create', 'scr-movie-panel', 'scr-movement-panel', 'scr-waiting', 'scr-denied', 'scr-progress', 'scr-verify', 'scr-delivery'].forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function signIn() {
+            myName = document.getElementById('username').value.trim();
+            if(!myName) return alert("Please specify your developer name.");
+
+            peer = new Peer('tht-client-' + myName.toLowerCase());
+
+            peer.on('open', () => show('scr-create'));
+            peer.on('error', () => alert("Link ID busy. Try appending numbers."));
+
+            peer.on('connection', (connection) => {
+                conn = connection;
+                conn.on('data', (data) => {
+                    if(data.action === 'status') {
+                        if(data.value === 'denied') show('scr-denied');
+                        if(data.value === 'verifying') show('scr-verify');
+                    }
+                    if(data.action === 'progress') {
+                        show('scr-progress');
+                        document.getElementById('progress-heading').innerText = data.type === 'Movie' ? "THT is compiling your movie..." : "THT is processing Live Movement parameters...";
+                        document.getElementById('live-pct').innerText = data.value + "%";
+                    }
+                    if(data.action === 'delivery') {
+                        show('scr-delivery');
+                        document.getElementById('preview-placeholder').style.display = 'none';
+                        const v = document.getElementById('output-video');
+                        v.src = data.url; v.style.display = 'block';
+                        const dl = document.getElementById('download-lnk');
+                        dl.href = data.url; dl.style.display = 'block';
+                    }
+                });
+            });
+        }
+
+        function openPipeline(mode) {
+            if(mode === 'Movie') show('scr-movie-panel');
+            if(mode === 'LiveMovement') show('scr-movement-panel');
+        }
+
+        function submitMovie() {
+            const title = document.getElementById('mv-title').value;
+            const desc = document.getElementById('mv-desc').value;
+            const script = document.getElementById('mv-script').value;
+            
+            window.location.href = `mailto:liveproductionstht@gmail.com?subject=Movie Setup Request [${myName}]&body=Title: ${title}%0D%0ADescription: ${desc}%0D%0AScript Details: ${script}%0D%0A%0D%0AConnect ID: tht-client-${myName.toLowerCase()}`;
+            show('scr-waiting');
+        }
+
+        function submitMovement() {
+            const directions = document.getElementById('mvmt-directions').value;
+            window.location.href = `mailto:liveproductionstht@gmail.com?subject=Live Movement Order [${myName}]&body=Animation Instructions: ${directions}%0D%0A%0D%0AConnect ID: tht-client-${myName.toLowerCase()}`;
+            show('scr-waiting');
+        }
+
+        function verifyGate() {
+            alert("Polling verification matrices...");
+            show('scr-delivery');
+        }
+    </script>
+</body>
+</html>
