@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Hub - THT Productions</title>
+    <style>
+        :root {
+            --primary-color: #ff4757;
+            --bg-color: #f1f2f6;
+            --card-bg: #ffffff;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; }
+        header { background: linear-gradient(135deg, var(--primary-color), #ff6b81); color: white; padding: 20px 0; text-align: center; }
+        nav { margin: 20px 0; display: flex; justify-content: center; gap: 15px; }
+        nav a { text-decoration: none; color: white; background-color: rgba(255,255,255,0.2); padding: 10px 20px; border-radius: 20px; font-weight: bold; }
+        
+        .container { max-width: 500px; margin: 40px auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2f3542; }
+        
+        .auth-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        .auth-btn { padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .google { background-color: #4285F4; }
+        .apple { background-color: #000000; }
+        .xbox { background-color: #107C10; }
+        .twitter { background-color: #1DA1F2; }
+        
+        .feedback-form { display: none; flex-direction: column; gap: 15px; }
+        label { font-weight: bold; color: #57606f; }
+        input, textarea { padding: 10px; border: 1px solid #ced6e0; border-radius: 6px; font-size: 1em; }
+        textarea { resize: vertical; height: 120px; }
+        
+        .submit-btn { background-color: #2ed573; color: white; padding: 12px; border: none; border-radius: 6px; font-size: 1.1em; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        .submit-btn:hover { background-color: #26af5f; }
+        .status-msg { text-align: center; font-weight: bold; color: #2ed573; margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>User Feedback Portal</h1>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="collabs.html">Collaborations</a>
+            <a href="feedback.html">Feedback</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div id="authBox">
+            <h2>Sign In to Leave Feedback</h2>
+            <p style="text-align: center; color: #747d8c;">Please select your account provider to verify your identity:</p>
+            <div class="auth-container">
+                <button class="auth-btn google" onclick="authenticate('Google')">Sign In with Google</button>
+                <button class="auth-btn apple" onclick="authenticate('Apple')">Sign In with Apple</button>
+                <button class="auth-btn xbox" onclick="authenticate('Xbox')">Sign In with Xbox</button>
+                <button class="auth-btn twitter" onclick="authenticate('X [Twitter]')">Sign In with X</button>
+            </div>
+        </div>
+
+        <div id="feedbackBox" class="feedback-form">
+            <h2>Submit Your Feedback</h2>
+            <div id="status" class="status-msg"></div>
+            
+            <label for="userName">Your Name:</label>
+            <input type="text" id="userName" placeholder="Enter your display name" required>
+
+            <label for="userMessage">Feedback Message:</label>
+            <textarea id="userMessage" placeholder="What can we improve or upgrade?" required></textarea>
+
+            <button class="submit-btn" onclick="sendFeedbackToGmail()">Send Feedback via Gmail</button>
+        </div>
+    </div>
+
+    <script>
+        let authenticatedProvider = "";
+
+        function authenticate(provider) {
+            authenticatedProvider = provider;
+            document.getElementById('authBox').style.display = 'none';
+            document.getElementById('feedbackBox').style.display = 'flex';
+            document.getElementById('status').innerText = `Successfully verified via ${provider}!`;
+        }
+
+        function sendFeedbackToGmail() {
+            const name = document.getElementById('userName').value.trim();
+            const message = document.getElementById('userMessage').value.trim();
+
+            if (!name || !message) {
+                alert("Please fill out both your name and feedback message.");
+                return;
+            }
+
+            // Target baseline address requested by the user
+            const baseGmailUrl = "https://mail.google.com/mail/u/0/#inbox?compose=CrpPbDzFqDTkTzVCJjXqZvZGbXKXVlHwsZpTwDgJnDzNshSxLQCSRLGnnqLzzpQPVLlmBxDbPPDtmCnvMQTg";
+
+            // Format body content securely including their authenticated login network details
+            const subject = encodeURIComponent(`THT Site Feedback from ${name}`);
+            const body = encodeURIComponent(
+                `User Name: ${name}\n` +
+                `Verified Via: ${authenticatedProvider}\n\n` +
+                `Feedback:\n${message}`
+            );
+
+            // Appends arguments directly onto your exact custom baseline path
+            const finalizedMailLink = `${baseGmailUrl}&subject=${subject}&body=${body}`;
+
+            // Launches deep link trigger wrapper
+            window.open(finalizedMailLink, '_blank');
+        }
+    </script>
+
+</body>
+</html>
